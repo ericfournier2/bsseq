@@ -129,8 +129,17 @@ combineList <- function(x, ..., BACKEND = NULL) {
             reduce(c(x, y), drop.empty.ranges = TRUE, min.gapwidth = 0L)
         },
         x = x_rowRanges)
-    intersect_rowRanges <- Reduce(intersect, x_rowRanges)
-    all_x_have_same_loci <- identical(ans_rowRanges, intersect_rowRanges)
+    
+    #intersect_rowRanges <- Reduce(intersect, x_rowRanges)
+    all_x_have_same_loci = TRUE
+    for(i in 1:(length(x_rowRanges) - 1)) {
+        two_identical = identical(x_rowRanges[[i]], x_rowRanges[[i+1]])
+        all_x_have_same_loci = all_x_have_same_loci && two_identical
+        
+        if(!all_x_have_same_loci)
+            break
+    }
+    
     # Check if safe to combine smoothed representations (coef and se.coef).
     # It's only safe if all objects contain the same set of loci.
     x_has_been_smoothed <- vapply(x, hasBeenSmoothed, logical(1L))
@@ -159,9 +168,11 @@ combineList <- function(x, ..., BACKEND = NULL) {
     # Combine elements of BSseq objects ----------------------------------------
 
     # Combine colData
-    ans_colData <- as(
-        Reduce(combine, lapply(x, function(xx) as.data.frame(colData(xx)))),
-        "DataFrame")
+#    ans_colData <- as(
+#        Reduce(combine, lapply(x, function(xx) as.data.frame(colData(xx)))),
+#        "DataFrame")
+        
+    ans_colData <- do.call(rbind, lapply(x, function(xx) as.data.frame(colData(xx))))            
     # Extract assays to be combined
     # NOTE: Use of `assay(..., withDimnames = FALSE)` is deliberate
     x_M <- lapply(x, assay, "M", withDimnames = FALSE)
